@@ -557,7 +557,7 @@
           const response = await fetchWithRetry(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`);
           const data = await response.json();
           container.innerHTML = '';
-          const suggestions = data.RelatedTopics?.slice(0, 8).map(topic => topic.Text).filter(text => text) || [];
+          const suggestions = (data.RelatedTopics || []).slice(0, 8).map(topic => topic.Text).filter(text => text);
           if (suggestions.length) {
             suggestions.forEach((text) => {
               const div = document.createElement('div');
@@ -739,7 +739,7 @@
           result.className = 'result';
           result.innerHTML = `
             <div class="url">www.example${i + 1}.com</div>
-            <h3><a href="https://www.example.com" target="_blank" rel="noopener noreferrer">Result ${i + 1} for ${query}</a></h3>
+            <h3><a href="https://www.example${i + 1}.com" target="_blank" rel="noopener noreferrer">Result ${i + 1} for ${query}</a></h3>
             <p>Sample description for ${query}.</p>
           `;
           resultsDiv.appendChild(result);
