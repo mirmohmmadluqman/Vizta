@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vizta Search</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff;
+      color: #202124;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    body.dark {
+      background-color: #202124;
+      color: #e8eaed;
+    }
+    :root {
+      --primary-blue: #1a0dab;
+      --text-color: #202124;
+      --border-color: #dfe1e5;
+      --card-bg: #fff;
+      --shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+    }
+    body.dark {
+      --text-color: #e8eaed;
+      --border-color: #5f6368;
+      --card-bg: #303134;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      flex: 1;
+    }
+    .homepage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 100px);
+    }
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 400;
+      letter-spacing: -1px;
+      margin-bottom: 30px;
+      color: var(--text-color);
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 584px;
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 10px;
+      background: var(--card-bg);
+      position: relative;
+    }
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      padding: 10px 10px 10px 40px;
+      background: transparent;
+      color: var(--text-color);
+    }
+    .search-box .mic {
+      width: 24px;
+      height: 24px;
+      background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Cpath fill="%235f6368" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm5.71 6.29c-.39-.39-1.02-.39-1.41 0s-.39 1.02 0 1.41C16.55 13.22 17 14.1 17 15v1c0 .55.45 1 1 1s1-.45 1-1v-1c0-.9-.45-1.78-1.29-2.71zM6.29 11.29c-.39.39-.39 1.02 0 1.41C7.45 13.22 8 14.1 8 15v1c0 .55.45 1 1 1s1-.45 1-1v-1c0-.9-.45-1.78-1.29-2.71-.39-.39-1.02-.39-1.41 0z"/%3E%3C/svg%3E') no-repeat center;
+      position: absolute;
+      left: 10px;
+      cursor: pointer;
+    }
+    .search-buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .search-buttons button {
+      background: #f8f9fa;
+      border: 1px solid #f8f9fa;
+      border-radius: 4px;
+      padding: 10px 16px;
+      font-size: 14px;
+      color: #3c4043;
+      cursor: pointer;
+    }
+    .search-buttons button:hover {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      border-color: #dadce0;
+    }
+    .autocomplete {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0 0 24px 24px;
+      box-shadow: var(--shadow);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .autocomplete div {
+      padding: 10px 16px;
+      font-size: 16px;
+      color: var(--text-color);
+      cursor: pointer;
+    }
+    .autocomplete div:hover, .autocomplete div.active {
+      background: #f1f3f4;
+    }
+    body.dark .autocomplete div:hover, body.dark .autocomplete div.active {
+      background: #3c4043;
+    }
+    .tabs {
+      display: flex;
+      gap: 20px;
+      border-bottom: 1px solid #dadce0;
+      margin: 10px 0;
+      padding: 0 0 8px;
+      position: sticky;
+      top: 0;
+      background: var(--card-bg);
+      z-index: 9;
+    }
+    body.dark .tabs {
+      border-bottom: 1px solid #5f6368;
+    }
+    .tabs button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      padding: 0 0 8px;
+      font-size: 14px;
+      color: #5f6368;
+      cursor: pointer;
+    }
+    .tabs button.active {
+      color: var(--primary-blue);
+      border-bottom: 2px solid var(--primary-blue);
+    }
+    .tabs svg {
+      width: 16px;
+      height: 16px;
+      fill: #5f6368;
+    }
+    .tabs button.active svg {
+      fill: var(--primary-blue);
+    }
+    .results-container {
+      display: flex;
+      gap: 30px;
+    }
+    .results {
+      flex: 2;
+    }
+    .knowledge-panel {
+      flex: 1;
+      max-width: 400px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      display: none;
+    }
+    .knowledge-panel img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .knowledge-panel h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .result, .ad {
+      margin-bottom: 20px;
+    }
+    .result h3, .ad h3 {
+      font-size: 20px;
+      color: var(--primary-blue);
+      margin-bottom: 2px;
+    }
+    .result .url, .ad .url {
+      font-size: 14px;
+      color: #006621;
+      margin-bottom: 4px;
+    }
+    .result p, .ad p {
+      font-size: 14px;
+      color: var(--text-color);
+      line-height: 1.4;
+    }
+    .ad::before {
+      content: 'Ad';
+      display: inline-block;
+      background: #f1f3f4;
+      color: #3c4043;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-bottom: 5px;
+    }
+    body.dark .ad::before {
+      background: #3c4043;
+      color: #e8eaed;
+    }
+    .people-also-ask {
+      margin: 20px 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px;
+    }
+    .people-also-ask h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .question {
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 0;
+      cursor: pointer;
+    }
+    .question h4 {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    .question p {
+      font-size: 14px;
+      color: var(--text-color);
+      display: none;
+    }
+    .question.active p {
+      display: block;
+    }
+    .related-searches {
+      margin: 20px 0;
+    }
+    .related-searches h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .related-searches ul {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      list-style: none;
+    }
+    .related-searches a {
+      color: var(--primary-blue);
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .related-searches a:hover {
+      text-decoration: underline;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .pagination a {
+      color: var(--primary-blue);
+      font-size: 14px;
+      text-decoration: none;
+      padding: 5px 10px;
+    }
+    .pagination a.active {
+      font-weight: bold;
+      text-decoration: underline;
+    }
+    .pagination a:hover {
+      text-decoration: underline;
+    }
+    .image-results, .video-results, .news-results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .image-result img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .video-result, .news-result {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .video-result img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .video-result h4, .news-result h4 {
+      font-size: 14px;
+      color: var(--primary-blue);
+      margin: 5px 0;
+    }
+    .video-result p, .news-result p {
+      font-size: 12px;
+      color: #5f6368;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
+    }
+    .modal .close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .loading-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 4px;
+      background: var(--primary-blue);
+      z-index: 100;
+      transition: width 0.3s;
+    }
+    .loading {
+      text-align: center;
+      font-size: 16px;
+      color: var(--text-color);
+    }
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--text-color);
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    footer {
+      background: #f2f2f2;
+      border-top: 1px solid #dadce0;
+      padding: 20px;
+      font-size: 14px;
+      color: #70757a;
+    }
+    body.dark footer {
+      background: #171717;
+      border-top: 1px solid #5f6368;
+    }
+    footer a {
+      color: #70757a;
+      text-decoration: none;
+      margin-right: 20px;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      color: var(--text-color);
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+      .search-box {
+        max-width: 90%;
+      }
+      .results-container {
+        flex-direction: column;
+      }
+      .knowledge-panel {
+        max-width: 100%;
+      }
+      .tabs {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .related-searches ul {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 480px) {
+      .logo {
+        font-size: 2rem;
+      }
+      .search-box input {
+        font-size: 14px;
+      }
+      .search-buttons button {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+      .image-results, .video-results, .news-results {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-bar" id="loadingBar"></div>
+  <button class="theme-toggle" aria-label="Toggle theme">🌙</button>
+  <div class="container homepage" id="homepage">
+    <h1 class="logo" aria-label="Vizta Search">Vizta</h1>
+    <div class="search-box">
+      <div class="mic" aria-label="Voice search"></div>
+      <input type="text" id="searchInput" placeholder="Search Vizta or type a URL" aria-label="Search input">
+      <div class="autocomplete" id="autocomplete"></div>
+    </div>
+    <div class="search-buttons">
+      <button id="searchButton">Vizta Search</button>
+      <button id="luckyButton">I'm Feeling Lucky</button>
+    </div>
+  </div>
+  <div class="container results-container" id="resultsContainer" style="display: none;">
+    <div class="tabs" role="tablist">
+      <button class="active" data-tab="web" role="tab" aria-selected="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.5 3.5h17v17h-17z"/></svg> All
+      </button>
+      <button data-tab="images" role="tab">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg> Images
+      </button>
+      <button data-tab="videos" role="tab">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg> Videos
+      </button>
+      <button data-tab="news" role="tab">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v6H7v-6z"/></svg> News
+      </button>
+      <button data-tab="maps" role="tab">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg> Maps
+      </button>
+      <button data-tab="more" role="tab">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg> More
+      </button>
+    </div>
+    <div class="results" id="results" role="region" aria-live="polite"></div>
+    <div class="knowledge-panel" id="knowledgePanel">
+      <h3>Knowledge Panel</h3>
+      <img src="https://via.placeholder.com/200" alt="Knowledge image">
+      <p>Dummy info about the entity.</p>
+      <a href="#" target="_blank" rel="noopener noreferrer">Learn more</a>
+    </div>
+  </div>
+  <footer>
+    <div>
+      <a href="#">About</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Settings</a>
+    </div>
+    <div>
+      <a href="#">Advertising</a>
+      <a href="#">Business</a>
+      <a href="#">How Search works</a>
+    </div>
+  </footer>
+  <div class="modal" id="imageModal">
+    <span class="close" aria-label="Close modal">×</span>
+    <img src="" alt="Preview image">
+  </div>
+  <script>
+    const state = {
+      currentTab: 'web',
+      currentPage: 1,
+      query: '',
+      isHomepage: true
+    };
+
+    const searchInput = document.getElementById('searchInput');
+    const autocomplete = document.getElementById('autocomplete');
+    const homepage = document.getElementById('homepage');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const resultsDiv = document.getElementById('results');
+    const knowledgePanel = document.getElementById('knowledgePanel');
+    const loadingBar = document.getElementById('loadingBar');
+    const themeToggle = document.querySelector('.theme-toggle');
+    const tabs = document.querySelectorAll('.tabs button');
+    const imageModal = document.getElementById('imageModal');
+    const modalImage = imageModal.querySelector('img');
+    const modalClose = imageModal.querySelector('.close');
+    const searchButton = document.getElementById('searchButton');
+    const luckyButton = document.getElementById('luckyButton');
+
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.textContent = '☀️';
+    }
+
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      themeToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') search(searchInput.value);
+    });
+    searchButton.addEventListener('click', () => search(searchInput.value));
+    luckyButton.addEventListener('click', () => search(searchInput.value));
+
+    function handleAutocomplete(input, container) {
+      input.addEventListener('input', debounce(async () => {
+        const query = input.value.trim();
+        if (!query) {
+          container.style.display = 'none';
+          return;
+        }
+        try {
+          const response = await fetchWithRetry(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`);
+          const data = await response.json();
+          container.innerHTML = '';
+          const suggestions = data.RelatedTopics?.slice(0, 8).map(topic => topic.Text).filter(text => text) || [];
+          if (suggestions.length) {
+            suggestions.forEach((text) => {
+              const div = document.createElement('div');
+              div.textContent = text;
+              div.setAttribute('tabindex', '0');
+              div.addEventListener('click', () => {
+                input.value = text;
+                container.style.display = 'none';
+                search(text);
+              });
+              div.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                  input.value = text;
+                  container.style.display = 'none';
+                  search(text);
+                }
+              });
+              container.appendChild(div);
+            });
+            container.style.display = 'block';
+          } else {
+            container.style.display = 'none';
+          }
+        } catch (error) {
+          console.error('Autocomplete error:', error);
+          container.style.display = 'none';
+        }
+      }, 300));
+
+      let selectedIndex = -1;
+      input.addEventListener('keydown', (e) => {
+        const items = container.querySelectorAll('div');
+        if (items.length === 0) return;
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+          updateAutocompleteSelection(items);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, -1);
+          updateAutocompleteSelection(items);
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+          e.preventDefault();
+          input.value = items[selectedIndex].textContent;
+          container.style.display = 'none';
+          search(input.value);
+        } else if (e.key === 'Escape') {
+          container.style.display = 'none';
+          selectedIndex = -1;
+        }
+      });
+
+      function updateAutocompleteSelection(items) {
+        items.forEach((item, index) => {
+          item.classList.toggle('active', index === selectedIndex);
+          if (index === selectedIndex) item.focus();
+        });
+      }
+    }
+    handleAutocomplete(searchInput, autocomplete);
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        state.currentTab = tab.dataset.tab;
+        state.currentPage = 1;
+        if (state.query) search(state.query);
+      });
+    });
+
+    modalClose.addEventListener('click', () => {
+      imageModal.style.display = 'none';
+    });
+    imageModal.addEventListener('click', (e) => {
+      if (e.target === imageModal) imageModal.style.display = 'none';
+    });
+
+    async function fetchWithRetry(url, retries = 3, delay = 1000) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url);
+          if (response.ok) return response;
+          throw new Error(`HTTP ${response.status}`);
+        } catch (error) {
+          if (i === retries - 1) throw error;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    async function search(query) {
+      if (!query) return;
+      state.query = query;
+      state.isHomepage = false;
+      homepage.style.display = 'none';
+      resultsContainer.style.display = 'flex';
+      resultsDiv.innerHTML = '<div class="loading">Loading...</div>';
+      loadingBar.style.width = '100%';
+      setTimeout(() => loadingBar.style.width = '0', 300);
+
+      const dummyImages = [
+        { urls: { small: 'https://via.placeholder.com/200', full: 'https://via.placeholder.com/800' } },
+        { urls: { small: 'https://via.placeholder.com/200', full: 'https://via.placeholder.com/800' } }
+      ];
+      const dummyVideos = [
+        { id: { videoId: 'dQw4w9WgXcQ' }, snippet: { title: 'Sample Video', thumbnails: { medium: { url: 'https://via.placeholder.com/200' } }, channelTitle: 'Sample Channel', publishedAt: new Date().toISOString() } }
+      ];
+      const dummyNews = [
+        { title: 'Sample News', url: 'https://www.example.com', source: { name: 'Sample Source' }, publishedAt: new Date().toISOString() }
+      ];
+      let duckData = { RelatedTopics: [], Heading: '', Abstract: '', AbstractURL: '', Image: '' };
+
+      try {
+        const duckResponse = await fetchWithRetry(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`);
+        duckData = await duckResponse.json();
+      } catch (e) {
+        console.warn('DuckDuckGo API error:', e);
+        duckData = {
+          Heading: `Fallback for ${query}`,
+          Abstract: `No results available for ${query}.`,
+          AbstractURL: 'https://www.example.com',
+          Image: 'https://via.placeholder.com/200',
+          RelatedTopics: [
+            { Text: `Related to ${query} 1`, FirstURL: 'https://www.example.com' },
+            { Text: `Related to ${query} 2`, FirstURL: 'https://www.example.com' }
+          ]
+        };
+      }
+
+      let newsData = { articles: dummyNews };
+      let imageData = { results: dummyImages };
+      let videoData = { items: dummyVideos };
+      try {
+        const newsResponse = await fetch(`https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=en&token=YOUR_GNEWS_API_KEY`);
+        newsData = await newsResponse.json();
+      } catch (e) {
+        console.warn('GNews API error:', e);
+      }
+      try {
+        const imageResponse = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&client_id=YOUR_UNSPLASH_API_KEY`);
+        imageData = await imageResponse.json();
+      } catch (e) {
+        console.warn('Unsplash API error:', e);
+      }
+      try {
+        const videoResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=YOUR_YOUTUBE_API_KEY`);
+        videoData = await videoResponse.json();
+      } catch (e) {
+        console.warn('YouTube API error:', e);
+      }
+
+      resultsDiv.innerHTML = '';
+
+      if (state.currentTab === 'web') {
+        resultsDiv.innerHTML += `
+          <div class="ad">
+            <div class="url">www.example.com</div>
+            <h3><a href="https://www.example.com" target="_blank" rel="noopener noreferrer">Sample Ad</a></h3>
+            <p>Ad description for ${query}.</p>
+          </div>
+        `;
+        if (duckData.Abstract || duckData.Answer) {
+          const result = document.createElement('div');
+          result.className = 'result';
+          let html = '';
+          if (duckData.Heading) html += `<h3><a href="${duckData.AbstractURL || '#'}" target="_blank" rel="noopener noreferrer">${duckData.Heading}</a></h3>`;
+          if (duckData.AbstractURL) html += `<div class="url">${duckData.AbstractURL}</div>`;
+          if (duckData.Abstract || duckData.Answer) html += `<p>${duckData.Abstract || duckData.Answer}</p>`;
+          result.innerHTML = html;
+          resultsDiv.appendChild(result);
+        }
+        for (let i = 0; i < 3; i++) {
+          const result = document.createElement('div');
+          result.className = 'result';
+          result.innerHTML = `
+            <div class="url">www.example${i + 1}.com</div>
+            <h3><a href="https://www.example.com" target="_blank" rel="noopener noreferrer">Result ${i + 1} for ${query}</a></h3>
+            <p>Sample description for ${query}.</p>
+          `;
+          resultsDiv.appendChild(result);
+        }
+        const questions = [
+          `What is ${query}?`,
+          `How does ${query} work?`,
+          `Why is ${query} important?`,
+          `Where can I find ${query}?`
+        ];
+        const paa = document.createElement('div');
+        paa.className = 'people-also-ask';
+        paa.innerHTML = '<h3>People also ask</h3>';
+        questions.forEach(q => {
+          const div = document.createElement('div');
+          div.className = 'question';
+          div.innerHTML = `<h4>${q}</h4><p>Sample answer for ${q}.</p>`;
+          div.addEventListener('click', () => div.classList.toggle('active'));
+          paa.appendChild(div);
+        });
+        resultsDiv.appendChild(paa);
+        if (duckData.RelatedTopics?.length) {
+          const related = document.createElement('div');
+          related.className = 'related-searches';
+          related.innerHTML = `<h3>Related searches</h3><ul></ul>`;
+          const ul = related.querySelector('ul');
+          duckData.RelatedTopics.slice(0, 8).forEach(topic => {
+            if (topic.Text && topic.FirstURL) {
+              const li = document.createElement('li');
+              li.innerHTML = `<a href="${topic.FirstURL}" target="_blank" rel="noopener noreferrer">${topic.Text}</a>`;
+              ul.appendChild(li);
+            }
+          });
+          resultsDiv.appendChild(related);
+        }
+        const pagination = document.createElement('div');
+        pagination.className = 'pagination';
+        for (let i = 1; i <= 5; i++) {
+          pagination.innerHTML += `<a href="#" class="${state.currentPage === i ? 'active' : ''}" onclick="state.currentPage=${i};search('${query}');return false;">${i}</a>`;
+        }
+        resultsDiv.appendChild(pagination);
+        if (duckData.Heading) {
+          knowledgePanel.style.display = 'block';
+          knowledgePanel.innerHTML = `
+            <h3>${duckData.Heading}</h3>
+            ${duckData.Image ? `<img src="${duckData.Image}" alt="Knowledge image" onerror="this.style.display='none'">` : ''}
+            <p>${duckData.Abstract || 'No info available.'}</p>
+            ${duckData.AbstractURL ? `<a href="${duckData.AbstractURL}" target="_blank" rel="noopener noreferrer">Learn more</a>` : ''}
+          `;
+        } else {
+          knowledgePanel.style.display = 'none';
+        }
+      }
+      if (state.currentTab === 'images') {
+        const images = document.createElement('div');
+        images.className = 'image-results';
+        imageData.results.slice(0, 12).forEach(img => {
+          const div = document.createElement('div');
+          div.className = 'image-result';
+          div.innerHTML = `<img src="${img.urls.small}" alt="Image">`;
+          div.addEventListener('click', () => {
+            modalImage.src = img.urls.full;
+            imageModal.style.display = 'flex';
+          });
+          images.appendChild(div);
+        });
+        resultsDiv.appendChild(images);
+        if (!imageData.results.length) resultsDiv.innerHTML = '<p>No images found.</p>';
+      }
+      if (state.currentTab === 'videos') {
+        const videos = document.createElement('div');
+        videos.className = 'video-results';
+        videoData.items.slice(0, 6).forEach(vid => {
+          const div = document.createElement('div');
+          div.className = 'video-result';
+          div.innerHTML = `
+            <img src="${vid.snippet.thumbnails.medium.url}" alt="Video thumbnail">
+            <h4><a href="https://www.youtube.com/watch?v=${vid.id.videoId}" target="_blank" rel="noopener noreferrer">${vid.snippet.title}</a></h4>
+            <p>${vid.snippet.channelTitle} • ${new Date(vid.snippet.publishedAt).toLocaleDateString()}</p>
+          `;
+          videos.appendChild(div);
+        });
+        resultsDiv.appendChild(videos);
+        if (!videoData.items.length) resultsDiv.innerHTML = '<p>No videos found.</p>';
+      }
+      if (state.currentTab === 'news') {
+        const news = document.createElement('div');
+        news.className = 'news-results';
+        newsData.articles.slice(0, 6).forEach(article => {
+          const div = document.createElement('div');
+          div.className = 'news-result';
+          div.innerHTML = `
+            <h4><a href="${article.url}" target="_blank" rel="noopener noreferrer">${article.title}</a></h4>
+            <p>${article.source.name} • ${new Date(article.publishedAt).toLocaleDateString()}</p>
+          `;
+          news.appendChild(div);
+        });
+        resultsDiv.appendChild(news);
+        if (!newsData.articles.length) resultsDiv.innerHTML = '<p>No news found.</p>';
+      }
+      if (state.currentTab === 'maps') {
+        resultsDiv.innerHTML = '<p>Maps not implemented.</p>';
+      }
+      if (state.currentTab === 'more') {
+        resultsDiv.innerHTML = '<p>More features not implemented.</p>';
+      }
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+  </script>
+</body>
+</html>
